@@ -1,9 +1,9 @@
 #!/bin/bash
 
 tx=false
-freq=145000000
+freq=145775000
 mod=fm
-ppm=36
+ppm=0
 
 #read -p "Modulation (fm|am|usb|lsb) : " mod
 #read -p "PPM : " ppm
@@ -31,18 +31,18 @@ function help() {
 function listen() {
     tx=false        
     help
+    start_sdr
     killall arecord rpttx &> /dev/null
-    amixer -q sset Master on
 }
 
 function transmit() {
     tx=true
     help
-    amixer -q sset Master off &> /dev/null
+    killall rtl_fm aplay -9
  	arecord --format=S16_LE --rate=48000 --file-type=raw /dev/stdout 2> /dev/null \
     | csdr convert_i16_f \
     | csdr gain_ff 7000 | csdr convert_f_samplerf 20833 \
-	| sudo ./rpitx -i /dev/stdin -m RF -a 14 -f $(($freq/1000)) &> /dev/null & disown
+	| sudo ../rpitx -i /dev/stdin -m RF -a 14 -f $(($freq/1000)) &> /dev/null & disown
 }
 
 function gen_sine() {
@@ -54,7 +54,7 @@ function gen_sine() {
     ffmpeg -nostdin -hide_banner -loglevel panic -f lavfi -i "sine=frequency=$bf:sample_rate=48000:duration=$sec" -ab 16k -f wav -y /dev/stdout 2> /dev/null \
     | csdr convert_i16_f \
     | csdr gain_ff 7000 | csdr convert_f_samplerf 20833 \
-	| sudo ./rpitx -i /dev/stdin -m RF -a 14 -f $(($freq/1000)) &> /dev/null & disown
+	| sudo ../rpitx -i /dev/stdin -m RF -a 14 -f $(($freq/1000)) &> /dev/null & disown
     sleep $sec
     listen
 }
@@ -74,7 +74,6 @@ function quit() {
 
 trap "quit" SIGINT
 
-#start_sdr
 listen
 
 while true
