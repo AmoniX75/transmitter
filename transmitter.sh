@@ -4,12 +4,14 @@ tx=false
 freq=145775000
 bw=12500
 mod=fm
+gain=0
+sql=50
 ppm=0
 
 
 function start_sdr() {
     killall -q -9 rtl_fm aplay
-    rtl_fm -M $mod -f $freq -s $bw -p $ppm -E dc 2> /dev/null \
+    rtl_fm -g $gain -M $mod -l $sql -f $freq -s $bw -p $ppm -E dc 2> /dev/null \
     | aplay -q -r $bw -c 1 -f s16_le -t raw &> /dev/null & disown
 }
 
@@ -18,9 +20,11 @@ function help() {
     echo "Transmitter - réalisé par Guillaume PLC"
     echo "---------------------------------------------------"
     echo "  t       : Start/Stop transmitting"
-    echo "  s       : Generate BF sine signal"
+    echo "  n       : Generate BF sine signal"
     echo "  f       : Modify frequency"
     echo "  b       : Modify bandwidth (RX only)"
+    echo "  g       : Modify bandwidth (RX only)"
+    echo "  s       : Modify bandwidth (RX only)"
     echo "  m       : Modify modulation" 
     echo "  p       : Modify PPM (RX only)"   
     echo "  q       : Quit this program"
@@ -85,6 +89,19 @@ function mod_modulation() {
     listen
 }
 
+function mod_gain() {
+    help
+    read -p "Gain (0=auto) : " gain
+    listen
+}
+
+function mod_sql() {
+    help
+    read -p "Squelch (0-1000) : " sql
+    listen
+}
+
+
 function update_program() {
     rm rpitx transmitter.sh -rf
     git clone https://github.com/AmoniX75/transmitter.git
@@ -114,7 +131,9 @@ do
     elif [ "$key" = "m" ]; then mod_modulation;
     elif [ "$key" = "b" ]; then mod_bandwidth;
     elif [ "$key" = "p" ]; then mod_ppm;
-    elif [ "$key" = "s" ]; then gen_sine;   
+    elif [ "$key" = "g" ]; then mod_gain;
+    elif [ "$key" = "s" ]; then mod_sql;
+    elif [ "$key" = "n" ]; then gen_sine;   
     elif [ "$key" = "u" ]; then update_program;    
     elif [ "$key" = "q" ]; then quit;
     fi    
